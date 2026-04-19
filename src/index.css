@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+:root {
+  --lab-white: #ffffff;
+  --lab-black: #000000;
+  --lab-orange: #ff6a00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  color: #111;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f4f5 50%, #ffffff 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Ensure scrollbars are contained inside their parent */
+textarea,
+pre,
+.overflow-auto,
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+
+/* ReactFlow overrides — keep edges and labels crisp */
+.react-flow__edge-text {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+.react-flow__edge-textbg {
+  fill: rgba(255, 255, 255, 0.88) !important;
+  rx: 4 !important;
+  ry: 4 !important;
+}
+
+/* Prevent reactflow minimap/controls from overflowing */
+.react-flow__panel {
+  overflow: hidden;
+}
+
+/* Responsive control panel on small screens */
+@media (max-width: 640px) {
+  .react-flow__node {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+  }
+}
