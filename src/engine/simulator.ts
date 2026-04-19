@@ -10,9 +10,10 @@ import type {
     UniversalSnapshot,
 } from '../types/turing'
 
-const clampIndex = (idx: number) => Math.max(0, idx)
+const clampIndex = (idx: number) => idx
 
-const ensureCell = (tape: string[], index: number, blankSymbol: string) => {
+const ensureCell = (tape: string[], index: number, blankSymbol: string): string => {
+    if (index < 0) return blankSymbol
     while (index >= tape.length) tape.push(blankSymbol)
     return tape[index] ?? blankSymbol
 }
@@ -112,6 +113,13 @@ export const stepMulti = (machine: MultiMachine, snapshot: MultiSnapshot): Multi
     const transitions = machine.transitions[multiKey(snapshot.state, symbols)] ?? []
     const transition = transitions[0]
 
+    console.log('MultiTape step:', {
+        state: snapshot.state,
+        symbols,
+        heads: snapshot.heads,
+        transition,
+    })
+
     if (!transition) {
         return {
             ...snapshot,
@@ -128,13 +136,34 @@ export const stepMulti = (machine: MultiMachine, snapshot: MultiSnapshot): Multi
     const heads = [...snapshot.heads]
 
     tapes.forEach((tape, idx) => {
-        tape[heads[idx]] = transition.writes[idx] ?? machine.blankSymbol
-        heads[idx] = moveHead(heads[idx], transition.moves[idx] ?? 'S')
-        ensureCell(tape, heads[idx], machine.blankSymbol)
+        const write = transition.writes[idx] ?? machine.blankSymbol
+        const move = transition.moves[idx] ?? 'S'
+
+        tape[heads[idx]] = write
+
+        let nextHead = heads[idx]
+        if (move === 'L') nextHead = heads[idx] - 1
+        if (move === 'R') nextHead = heads[idx] + 1
+
+        if (nextHead < 0) {
+            tape.unshift(machine.blankSymbol)
+            nextHead = 0
+        }
+
+        ensureCell(tape, nextHead, machine.blankSymbol)
+        heads[idx] = nextHead
     })
 
     const currentSymbols = tapes.map((tape, idx) => tape[heads[idx]] ?? machine.blankSymbol)
     const halted = transition.newState === machine.acceptState || transition.newState === machine.rejectState
+
+    console.log('MultiTape result:', {
+        nextState: transition.newState,
+        tapes,
+        heads,
+        currentSymbols,
+        halted,
+    })
 
     return {
         ...snapshot,

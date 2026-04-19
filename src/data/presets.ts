@@ -102,16 +102,63 @@ export const anbnRecognizer: SingleMachine = {
 }
 
 export const copierMultiTape: MultiMachine = {
-    states: ['q0', 'q1', 'qAccept', 'qReject'],
+    states: ['q0', 'qAccept', 'qReject'],
     tapesCount: 2,
     startState: 'q0',
     acceptState: 'qAccept',
     rejectState: 'qReject',
     blankSymbol: '_',
     transitions: {
-        'q0|0,_': [{ newState: 'q0', writes: ['0', '0'], moves: ['R', 'R'] }],
-        'q0|1,_': [{ newState: 'q0', writes: ['1', '1'], moves: ['R', 'R'] }],
-        'q0|_,_': [{ newState: 'qAccept', writes: ['_', '_'], moves: ['S', 'S'] }],
+        // Normal copy: tape2 is blank, copy symbol and advance both heads
+        'q0|0,_': [{ newState: 'q0',       writes: ['0', '0'], moves: ['R', 'R'] }],
+        'q0|1,_': [{ newState: 'q0',       writes: ['1', '1'], moves: ['R', 'R'] }],
+        // Both tapes blank → copy complete → accept
+        'q0|_,_': [{ newState: 'qAccept',  writes: ['_', '_'], moves: ['S', 'S'] }],
+        // Tape2 already has content while tape1 still has input → reject
+        'q0|0,0': [{ newState: 'qReject',  writes: ['0', '0'], moves: ['S', 'S'] }],
+        'q0|0,1': [{ newState: 'qReject',  writes: ['0', '1'], moves: ['S', 'S'] }],
+        'q0|1,0': [{ newState: 'qReject',  writes: ['1', '0'], moves: ['S', 'S'] }],
+        'q0|1,1': [{ newState: 'qReject',  writes: ['1', '1'], moves: ['S', 'S'] }],
+        // Tape1 blank but tape2 still has content → reject
+        'q0|_,0': [{ newState: 'qReject',  writes: ['_', '0'], moves: ['S', 'S'] }],
+        'q0|_,1': [{ newState: 'qReject',  writes: ['_', '1'], moves: ['S', 'S'] }],
+    },
+}
+
+export const palindromeCheckerMultiTape: MultiMachine = {
+    states: ['qCopy', 'qRewindT1', 'qCheck', 'qAccept', 'qReject'],
+    tapesCount: 2,
+    startState: 'qCopy',
+    acceptState: 'qAccept',
+    rejectState: 'qReject',
+    blankSymbol: '_',
+    transitions: {
+        // ── Phase 1: Copy tape1 → tape2, both heads move right ───────────────
+        'qCopy|0,_': [{ newState: 'qCopy',      writes: ['0', '0'], moves: ['R', 'R'] }],
+        'qCopy|1,_': [{ newState: 'qCopy',      writes: ['1', '1'], moves: ['R', 'R'] }],
+        // End of input: both heads at pos N on '_'.
+        // Begin rewinding tape1 left; tape2 stays at pos N.
+        'qCopy|_,_': [{ newState: 'qRewindT1',  writes: ['_', '_'], moves: ['L', 'S'] }],
+
+        // ── Phase 2: Rewind tape1 to pos 0 (tape2 stays at pos N on '_') ─────
+        // tape1 still reading real symbols → keep moving tape1 left
+        'qRewindT1|0,_': [{ newState: 'qRewindT1', writes: ['0', '_'], moves: ['L', 'S'] }],
+        'qRewindT1|1,_': [{ newState: 'qRewindT1', writes: ['1', '_'], moves: ['L', 'S'] }],
+        // tape1 reads '_' → head went to -1, engine returns blank (requires the clampIndex fix above).
+        // Move tape1 R → lands at pos 0. Move tape2 L → lands at pos N-1 (last real char). → qCheck.
+        'qRewindT1|_,_': [{ newState: 'qCheck',    writes: ['_', '_'], moves: ['R', 'L'] }],
+
+        // ── Phase 3: Compare tape1 forward (R) with tape2 backward (L) ───────
+        'qCheck|0,0': [{ newState: 'qCheck',   writes: ['0', '0'], moves: ['R', 'L'] }],
+        'qCheck|1,1': [{ newState: 'qCheck',   writes: ['1', '1'], moves: ['R', 'L'] }],
+        // Mismatch → reject
+        'qCheck|0,1': [{ newState: 'qReject',  writes: ['0', '1'], moves: ['S', 'S'] }],
+        'qCheck|1,0': [{ newState: 'qReject',  writes: ['1', '0'], moves: ['S', 'S'] }],
+        // tape1 exhausted (reads '_'): all compared positions matched → accept
+        // tape2 may be at center char (odd-length) or also blank (even-length); both are valid
+        'qCheck|_,0': [{ newState: 'qAccept',  writes: ['_', '0'], moves: ['S', 'S'] }],
+        'qCheck|_,1': [{ newState: 'qAccept',  writes: ['_', '1'], moves: ['S', 'S'] }],
+        'qCheck|_,_': [{ newState: 'qAccept',  writes: ['_', '_'], moves: ['S', 'S'] }],
     },
 }
 
@@ -147,6 +194,14 @@ export const presets: MachinePreset[] = [
         mode: 'multi',
         machine: copierMultiTape,
         sampleInput: '101001',
+    },
+    {
+        id: 'palindrome-checker-multi',
+        name: 'Palindrome Checker (2-Tape)',
+        description: 'Copies input to tape 2, rewinds tape 1, then compares forward vs backward in O(n).',
+        mode: 'multi',
+        machine: palindromeCheckerMultiTape,
+        sampleInput: '0110',
     },
     {
         id: 'universal-binary',
