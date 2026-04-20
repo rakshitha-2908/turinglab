@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
-import { Download, Eye, EyeOff, FileUp, Sparkles } from 'lucide-react'
+import { Download, Eye, EyeOff, FileUp, Sparkles, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { presets } from '../data/presets'
 import type { Mode } from '../types/turing'
@@ -30,6 +30,8 @@ export function Sidebar({
 }: SidebarProps) {
     const importRef = useRef<HTMLInputElement | null>(null)
     const [showJson, setShowJson] = useState(false)
+    const [showPresetDropdown, setShowPresetDropdown] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement | null>(null)
 
     const onImport = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0]
@@ -53,6 +55,8 @@ export function Sidebar({
         URL.revokeObjectURL(url)
     }
 
+    const selectedPresetData = presets.find((p) => p.id === selectedPreset)
+
     return (
         <aside className="overflow-hidden rounded-3xl border border-white/60 bg-white/55 p-5 backdrop-blur-2xl">
             <div className="mb-4 flex items-center justify-between">
@@ -63,18 +67,58 @@ export function Sidebar({
             <div className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Preset Library</label>
-                    <select
-                        value={selectedPreset}
-                        onChange={(event) => onLoadPreset(event.target.value)}
-                        className="w-full rounded-2xl border border-zinc-200 bg-white/90 px-3 py-2 text-sm"
-                    >
-                        {presets.map((preset) => (
-                            <option key={preset.id} value={preset.id}>
-                                {preset.name} ({preset.mode})
-                            </option>
-                        ))}
-                    </select>
-                    <p className="text-xs text-zinc-500">{presets.find((preset) => preset.id === selectedPreset)?.description}</p>
+                    <div className="relative" ref={dropdownRef}>
+                        <button
+                            onClick={() => setShowPresetDropdown(!showPresetDropdown)}
+                            className="w-full rounded-2xl border border-zinc-200 bg-white/90 px-3 py-2 text-sm text-left flex items-center justify-between hover:bg-white transition"
+                        >
+                            <span>
+                                {selectedPresetData?.name}{' '}
+                                <span className="text-orange-500 font-semibold">({selectedPresetData?.mode})</span>
+                            </span>
+                            <ChevronDown size={16} className={`transition ${showPresetDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        <AnimatePresence>
+                            {showPresetDropdown && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute top-full left-0 right-0 mt-1 rounded-2xl border border-zinc-200 bg-white/95 shadow-lg z-50 max-h-96 overflow-y-auto"
+                                >
+                                    {presets.map((preset) => {
+                                        const isSelected = preset.id === selectedPreset
+                                        const isCompatible = preset.mode === mode
+                                        return (
+                                            <button
+                                                key={preset.id}
+                                                onClick={() => {
+                                                    onLoadPreset(preset.id)
+                                                    setShowPresetDropdown(false)
+                                                }}
+                                                className={`w-full px-3 py-2 text-sm text-left hover:bg-orange-50 transition ${isSelected ? 'bg-orange-100 border-l-2 border-l-orange-500' : 'border-l-2 border-l-transparent'}`}
+                                            >
+                                                <span className="text-zinc-700">
+                                                    {isCompatible ? '✓ ' : '→ '}
+                                                    {preset.name}
+                                                </span>
+                                                <span className="text-orange-500 font-semibold ml-1">
+                                                    ({preset.mode})
+                                                </span>
+                                            </button>
+                                        )
+                                    })}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                    <p className="text-xs text-zinc-500">
+                        {selectedPresetData?.description}
+                        <br />
+                        <span className="text-zinc-400">✓ = compatible | → = switch mode</span>
+                    </p>
                 </div>
 
                 <div className="space-y-2">
