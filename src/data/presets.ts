@@ -271,17 +271,16 @@ export const stringReverseMultiTape: MultiMachine = {
         'qRewindT2|0,_': [{ newState: 'qReverse', writes: ['0', '0'], moves: ['R', 'R'] }],
         'qRewindT2|1,_': [{ newState: 'qReverse', writes: ['1', '1'], moves: ['R', 'R'] }],
 
-        // Phase 4: Reverse - tape 1 forward (R), tape 2 backward (L)
-        'qReverse|0,0': [{ newState: 'qReverse', writes: ['0', '0'], moves: ['R', 'L'] }],
-        'qReverse|0,1': [{ newState: 'qReverse', writes: ['0', '1'], moves: ['R', 'L'] }],
-        'qReverse|1,0': [{ newState: 'qReverse', writes: ['1', '0'], moves: ['R', 'L'] }],
-        'qReverse|1,1': [{ newState: 'qReverse', writes: ['1', '1'], moves: ['R', 'L'] }],
+        // Phase 4: Reverse - tape 1 forward (R), tape 2 backward (L), write tape2's symbol to tape1
+        'qReverse|0,0': [{ newState: 'qReverse', writes: ['0', '_'], moves: ['R', 'L'] }],
+        'qReverse|0,1': [{ newState: 'qReverse', writes: ['1', '_'], moves: ['R', 'L'] }],
+        'qReverse|1,0': [{ newState: 'qReverse', writes: ['0', '_'], moves: ['R', 'L'] }],
+        'qReverse|1,1': [{ newState: 'qReverse', writes: ['1', '_'], moves: ['R', 'L'] }],
+        'qReverse|_,0': [{ newState: 'qReverse', writes: ['0', '_'], moves: ['R', 'L'] }],
+        'qReverse|_,1': [{ newState: 'qReverse', writes: ['1', '_'], moves: ['R', 'L'] }],
         // Tape 2 exhausted (at blank before start)
         'qReverse|0,_': [{ newState: 'qAccept', writes: ['0', '_'], moves: ['S', 'S'] }],
         'qReverse|1,_': [{ newState: 'qAccept', writes: ['1', '_'], moves: ['S', 'S'] }],
-        // Tape 1 exhausted
-        'qReverse|_,0': [{ newState: 'qAccept', writes: ['_', '0'], moves: ['S', 'S'] }],
-        'qReverse|_,1': [{ newState: 'qAccept', writes: ['_', '1'], moves: ['S', 'S'] }],
         'qReverse|_,_': [{ newState: 'qAccept', writes: ['_', '_'], moves: ['S', 'S'] }],
     },
 }
