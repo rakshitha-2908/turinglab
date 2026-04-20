@@ -235,50 +235,47 @@ export const stringReversal: SingleMachine = {
 }
 
 export const stringReverseMultiTape: MultiMachine = {
-    states: ['qCopy', 'qCopyEnd', 'qRewindT1', 'qRewindT2', 'qReverse', 'qAccept'],
+    states: ['qCopy', 'qCopyEnd', 'qRewindBoth', 'qMoveT2', 'qReverse', 'qAccept'],
     tapesCount: 2,
     startState: 'qCopy',
     acceptState: 'qAccept',
     rejectState: 'qAccept',
     blankSymbol: '_',
     transitions: {
-        // Phase 1: Copy tape 1 → tape 2, both heads move right
+        // Phase 1: Copy tape 1 → tape 2, both move right
         'qCopy|0,_': [{ newState: 'qCopy', writes: ['0', '0'], moves: ['R', 'R'] }],
         'qCopy|1,_': [{ newState: 'qCopy', writes: ['1', '1'], moves: ['R', 'R'] }],
-        // At end, both hit blank
         'qCopy|_,_': [{ newState: 'qCopyEnd', writes: ['_', '_'], moves: ['L', 'L'] }],
 
-        // Now both are on last real character (or blank if input was empty)
-        'qCopyEnd|0,0': [{ newState: 'qRewindT1', writes: ['0', '0'], moves: ['L', 'S'] }],
-        'qCopyEnd|1,1': [{ newState: 'qRewindT1', writes: ['1', '1'], moves: ['L', 'S'] }],
-        'qCopyEnd|_,_': [{ newState: 'qAccept', writes: ['_', '_'], moves: ['S', 'S'] }], // Empty input
+        // Phase 2: Both at last char, rewind to start
+        'qCopyEnd|0,0': [{ newState: 'qRewindBoth', writes: ['0', '0'], moves: ['L', 'L'] }],
+        'qCopyEnd|1,1': [{ newState: 'qRewindBoth', writes: ['1', '1'], moves: ['L', 'L'] }],
+        'qCopyEnd|_,_': [{ newState: 'qAccept', writes: ['_', '_'], moves: ['S', 'S'] }],
 
-        // Phase 2: Rewind tape 1 to start while tape 2 stays on last char
-        'qRewindT1|0,0': [{ newState: 'qRewindT1', writes: ['0', '0'], moves: ['L', 'S'] }],
-        'qRewindT1|0,1': [{ newState: 'qRewindT1', writes: ['0', '1'], moves: ['L', 'S'] }],
-        'qRewindT1|1,0': [{ newState: 'qRewindT1', writes: ['1', '0'], moves: ['L', 'S'] }],
-        'qRewindT1|1,1': [{ newState: 'qRewindT1', writes: ['1', '1'], moves: ['L', 'S'] }],
-        // Tape 1 reached blank before first char - now move both to start of content
-        'qRewindT1|_,0': [{ newState: 'qRewindT2', writes: ['_', '0'], moves: ['R', 'L'] }],
-        'qRewindT1|_,1': [{ newState: 'qRewindT2', writes: ['_', '1'], moves: ['R', 'L'] }],
+        // Phase 3: Rewind both to position 0 (before start, then move right)
+        'qRewindBoth|0,0': [{ newState: 'qRewindBoth', writes: ['0', '0'], moves: ['L', 'L'] }],
+        'qRewindBoth|0,1': [{ newState: 'qRewindBoth', writes: ['0', '1'], moves: ['L', 'L'] }],
+        'qRewindBoth|1,0': [{ newState: 'qRewindBoth', writes: ['1', '0'], moves: ['L', 'L'] }],
+        'qRewindBoth|1,1': [{ newState: 'qRewindBoth', writes: ['1', '1'], moves: ['L', 'L'] }],
+        'qRewindBoth|_,_': [{ newState: 'qMoveT2', writes: ['_', '_'], moves: ['R', 'R'] }],
 
-        // Phase 3: Rewind tape 2 to start while tape 1 advances to first char
-        'qRewindT2|0,0': [{ newState: 'qRewindT2', writes: ['0', '0'], moves: ['S', 'L'] }],
-        'qRewindT2|0,1': [{ newState: 'qRewindT2', writes: ['0', '1'], moves: ['S', 'L'] }],
-        'qRewindT2|1,0': [{ newState: 'qRewindT2', writes: ['1', '0'], moves: ['S', 'L'] }],
-        'qRewindT2|1,1': [{ newState: 'qRewindT2', writes: ['1', '1'], moves: ['S', 'L'] }],
-        // Tape 2 reached start
-        'qRewindT2|0,_': [{ newState: 'qReverse', writes: ['0', '0'], moves: ['R', 'R'] }],
-        'qRewindT2|1,_': [{ newState: 'qReverse', writes: ['1', '1'], moves: ['R', 'R'] }],
+        // Phase 4: Both at position 0, now move tape2 to end while tape1 stays at 0
+        'qMoveT2|0,0': [{ newState: 'qMoveT2', writes: ['0', '0'], moves: ['S', 'R'] }],
+        'qMoveT2|0,1': [{ newState: 'qMoveT2', writes: ['0', '1'], moves: ['S', 'R'] }],
+        'qMoveT2|1,0': [{ newState: 'qMoveT2', writes: ['1', '0'], moves: ['S', 'R'] }],
+        'qMoveT2|1,1': [{ newState: 'qMoveT2', writes: ['1', '1'], moves: ['S', 'R'] }],
+        'qMoveT2|0,_': [{ newState: 'qReverse', writes: ['0', '_'], moves: ['S', 'L'] }],
+        'qMoveT2|1,_': [{ newState: 'qReverse', writes: ['1', '_'], moves: ['S', 'L'] }],
 
-        // Phase 4: Reverse - tape 1 forward (R), tape 2 backward (L), write tape2's symbol to tape1
+        // Phase 5: Main reversal - tape1 at 0, tape2 at n-1
+        // Tape1 moves right (forward), tape2 moves left (backward), write tape2 to tape1
         'qReverse|0,0': [{ newState: 'qReverse', writes: ['0', '_'], moves: ['R', 'L'] }],
         'qReverse|0,1': [{ newState: 'qReverse', writes: ['1', '_'], moves: ['R', 'L'] }],
         'qReverse|1,0': [{ newState: 'qReverse', writes: ['0', '_'], moves: ['R', 'L'] }],
         'qReverse|1,1': [{ newState: 'qReverse', writes: ['1', '_'], moves: ['R', 'L'] }],
         'qReverse|_,0': [{ newState: 'qReverse', writes: ['0', '_'], moves: ['R', 'L'] }],
         'qReverse|_,1': [{ newState: 'qReverse', writes: ['1', '_'], moves: ['R', 'L'] }],
-        // Tape 2 exhausted (at blank before start)
+        // Tape2 exhausted (reached blank before position 0)
         'qReverse|0,_': [{ newState: 'qAccept', writes: ['0', '_'], moves: ['S', 'S'] }],
         'qReverse|1,_': [{ newState: 'qAccept', writes: ['1', '_'], moves: ['S', 'S'] }],
         'qReverse|_,_': [{ newState: 'qAccept', writes: ['_', '_'], moves: ['S', 'S'] }],
@@ -363,6 +360,12 @@ export const binaryIncrementMultiTape: MultiMachine = {
         'qIncrement|_,1': [{ newState: 'qIncrement', writes: ['_', '0'], moves: ['S', 'L'] }],
         'qIncrement|_,0': [{ newState: 'qAccept', writes: ['_', '1'], moves: ['S', 'S'] }],
         'qIncrement|_,_': [{ newState: 'qAccept', writes: ['_', '1'], moves: ['S', 'S'] }],
+        'qIncrement|0,1': [{ newState: 'qIncrement', writes: ['0', '0'], moves: ['S', 'L'] }],
+        'qIncrement|1,1': [{ newState: 'qIncrement', writes: ['1', '0'], moves: ['S', 'L'] }],
+        'qIncrement|0,0': [{ newState: 'qAccept', writes: ['0', '1'], moves: ['S', 'S'] }],
+        'qIncrement|1,0': [{ newState: 'qAccept', writes: ['1', '1'], moves: ['S', 'S'] }],
+        'qIncrement|0,_': [{ newState: 'qAccept', writes: ['0', '1'], moves: ['S', 'S'] }],
+        'qIncrement|1,_': [{ newState: 'qAccept', writes: ['1', '1'], moves: ['S', 'S'] }],
     },
 }
 
